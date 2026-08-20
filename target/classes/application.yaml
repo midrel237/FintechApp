@@ -1,0 +1,47 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost:5432/fintech_db
+    username: midrel
+    password: 1913liVe#
+    driver-class-name: org.postgresql.Driver
+
+  # Configuration de JPA et Hibernate
+  jpa:
+    hibernate:
+      ddl-auto: validate
+    show-sql: true
+    properties:
+      hibernate:
+        format_sql: true
+
+  # Configuration du serveur d'envoi d'e-mails (SMTP)
+  mail:
+    host: smtp.gmail.com # Serveur SMTP de Gmail
+    port: 587             # Port recommandé pour TLS
+    username: midreltiwa237@gmail.com
+    password: fintech237 # Utilisez un mot de passe d'application, pas votre mot de passe réel
+    properties:
+      mail:
+        smtp:
+          auth: true
+          starttls:
+            enable: true # Active le chiffrement TLS pour la sécurité
+
+# Paramètres JWT utilisés par JwtUtils (absents auparavant -> échec au démarrage
+# avec "Could not resolve placeholder 'app.jwtSecret'").
+# jwtSecret : clé de signature HMAC-SHA512 -> doit faire au moins 64 octets.
+# À REMPLACER en production par une valeur générée aléatoirement et injectée
+# via une variable d'environnement, jamais committée en clair.
+app:
+  jwtSecret: "fveAL6pwBPlAlbt98Fcjqq1BbVCn16aZ24AUD7SEr1OEnSPDEPsQwAFmWsOce5c3Gl3MmvVAC+Zmqf/lDWk/1A=="
+  jwtExpirationMs: 86400000   # 24h
+
+server:
+  port: 8080
+
+# NOTE SÉCURITÉ : ce fichier contient encore des identifiants réels en clair
+# (mot de passe PostgreSQL, mot de passe SMTP Gmail). À déplacer vers des
+# variables d'environnement avant tout push sur un dépôt partagé/public :
+#   password: ${DB_PASSWORD}
+#   password: ${MAIL_PASSWORD}
+#   jwtSecret: ${JWT_SECRET}

@@ -1,0 +1,8 @@
+{
+    "java.compile.nullAnalysis.mode": "automatic",
+    "markdown-mermaid.languages": [
+
+        "mermaid"
+    ],
+    "java.configuration.updateBuildConfiguration": "interactive"
+}
