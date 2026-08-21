@@ -14,18 +14,26 @@ spring:
       hibernate:
         format_sql: true
 
-  # Configuration du serveur d'envoi d'e-mails (SMTP)
+  
+  config:
+    import: "optional:file:.env[.properties]"
+
+  #   export MAIL_USERNAME=nexuscoders237@gmail.com
+  #   export MAIL_PASSWORD=xxxxxxxxxxxxxxxx   (le mot de passe d'application)
   mail:
     host: smtp.gmail.com # Serveur SMTP de Gmail
     port: 587             # Port recommandé pour TLS
-    username: midreltiwa237@gmail.com
-    password: fintech237 # Utilisez un mot de passe d'application, pas votre mot de passe réel
+    username: ${MAIL_USERNAME}
+    password: ${MAIL_PASSWORD}
     properties:
       mail:
         smtp:
           auth: true
           starttls:
             enable: true # Active le chiffrement TLS pour la sécurité
+          connectiontimeout: 5000  # 5s : évite de bloquer indéfiniment si le SMTP est injoignable
+          timeout: 5000
+          writetimeout: 5000
 
 # Paramètres JWT utilisés par JwtUtils (absents auparavant -> échec au démarrage
 # avec "Could not resolve placeholder 'app.jwtSecret'").
@@ -39,9 +47,7 @@ app:
 server:
   port: 8080
 
-# NOTE SÉCURITÉ : ce fichier contient encore des identifiants réels en clair
-# (mot de passe PostgreSQL, mot de passe SMTP Gmail). À déplacer vers des
-# variables d'environnement avant tout push sur un dépôt partagé/public :
+# NOTE SÉCURITÉ : le mot de passe PostgreSQL reste en clair ci-dessus — à
+# déplacer aussi vers une variable d'environnement avant tout push public :
 #   password: ${DB_PASSWORD}
-#   password: ${MAIL_PASSWORD}
-#   jwtSecret: ${JWT_SECRET}
+# (jwtSecret et les identifiants SMTP sont déjà externalisés ci-dessus)
