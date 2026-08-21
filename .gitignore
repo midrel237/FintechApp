@@ -1,0 +1,16 @@
+# Secrets locaux — ne jamais commiter
+.env
+.env.*
+
+# Build Maven
+target/
+
+# Logs
+*.log
+hs_err_pid*.log
+replay_pid*.log
+
+# IDE
+.vscode/
+.idea/
+*.iml
