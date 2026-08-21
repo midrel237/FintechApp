@@ -16,6 +16,7 @@ import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 
 import com.fintechApp.infrastructure.security.jwt.JwtUtils;
+import com.fintechApp.metier.exception.ValidationException;
 import com.fintechApp.metier.service.UtilisateurService;
 import com.fintechApp.persistance.entity.Utilisateur;
 import com.fintechApp.presentation.dto.utilisateurDTO.requestDTO.ConnexionUtilisateurRequestDTO;
@@ -26,6 +27,11 @@ import com.fintechApp.presentation.dto.utilisateurDTO.responseDTO.ConnexionUtili
 import com.fintechApp.presentation.dto.utilisateurDTO.responseDTO.CreateUtilisateurResponseDTO;
 import com.fintechApp.presentation.dto.utilisateurDTO.responseDTO.ReadUtilisateurResponseDTO;
 import com.fintechApp.presentation.dto.utilisateurDTO.responseDTO.UpdateUtilisateurResponseDTO;
+import com.fintechApp.presentation.exception.ErrorResponseDTO;
+
+import java.util.List;
+
+import jakarta.servlet.http.HttpServletRequest;
 
 @RestController
 @RequestMapping("/api/v1/utilisateurs")
@@ -58,14 +64,17 @@ public class UtilisateurController {
     // POST http://localhost:8080/api/utilisateurs/valider
     // Corrige l'ancien bug : un seul corps de requête (DTO), et non deux
     // @RequestBody sur la même méthode, ce que Spring MVC ne supporte pas.
+    // Le code incorrect n'est plus renvoyé en simple texte : il est levé
+    // comme ValidationException et transformé par GlobalExceptionHandler en
+    // JSON unique {error: {...}}, comme toutes les autres erreurs de l'API.
     @PostMapping("/valider")
-    public ResponseEntity<String> validerUtilisateur(@RequestBody ValidUtilisateurResquestDTO dto) {
+    public ResponseEntity<ErrorResponseDTO> validerUtilisateur(@RequestBody ValidUtilisateurResquestDTO dto,
+                                                                HttpServletRequest request) {
         boolean estValide = utilisateurService.validerUtilisateur(dto.getEmail(), dto.getCodeSaisi());
-        if (estValide) {
-            return ResponseEntity.ok("Utilisateur validé avec succès.");
-        } else {
-            return ResponseEntity.status(HttpStatus.BAD_REQUEST).body("Code de validation incorrect.");
+        if (!estValide) {
+            throw new ValidationException("Code de validation incorrect.");
         }
+        return reponseSucces("UTILISATEUR_VALIDE", "Utilisateur validé avec succès.", request);
     }
 
     // POST http://localhost:8080/api/utilisateurs/connexion
@@ -99,11 +108,11 @@ public class UtilisateurController {
     // JwtAuthenticationFilter, ce qui évite d'avoir à envoyer depuis Postman
     // un corps JSON à la forme peu standard (chaîne brute).
     @PostMapping("/deconnexion")
-    public ResponseEntity<String> deconnecterUtilisateur() {
+    public ResponseEntity<ErrorResponseDTO> deconnecterUtilisateur(HttpServletRequest request) {
         String email = SecurityContextHolder.getContext().getAuthentication().getName();
         utilisateurService.deconnecterUtilisateur(email);
         SecurityContextHolder.clearContext();
-        return ResponseEntity.ok("Déconnexion réussie.");
+        return reponseSucces("DECONNEXION_REUSSIE", "Déconnexion réussie.", request);
     }
 
     // GET http://localhost:8080/api/utilisateurs/{id}/lire
@@ -131,8 +140,19 @@ public class UtilisateurController {
 
     // DELETE http://localhost:8080/api/utilisateurs/{id}
     @DeleteMapping("/{id}")
-    public ResponseEntity<String> supprimerUtilisateur(@PathVariable Integer id) {
+    public ResponseEntity<ErrorResponseDTO> supprimerUtilisateur(@PathVariable Integer id, HttpServletRequest request) {
         utilisateurService.supprimerUtilisateur(id);
-        return ResponseEntity.ok("Utilisateur supprimé avec succès.");
+        return reponseSucces("UTILISATEUR_SUPPRIME", "Utilisateur supprimé avec succès.", request);
+    }
+
+    /**
+     * Construit une confirmation de succès dans le même format JSON unique
+     * que les erreurs ({@link ErrorResponseDTO} : code, message, status,
+     * timestamp, path, details), afin qu'aucune réponse de ce contrôleur ne
+     * soit un simple texte brut — un seul et même format pour tout l'API.
+     */
+    private ResponseEntity<ErrorResponseDTO> reponseSucces(String code, String message, HttpServletRequest request) {
+        ErrorResponseDTO body = new ErrorResponseDTO(code, message, HttpStatus.OK.value(), request.getRequestURI(), List.of());
+        return ResponseEntity.ok(body);
     }
 }
