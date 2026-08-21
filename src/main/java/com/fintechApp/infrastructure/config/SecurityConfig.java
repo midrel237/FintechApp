@@ -46,7 +46,6 @@ public class SecurityConfig {
                     "/api/v1/utilisateurs/creer", 
                     "/api/v1/utilisateurs/connexion", 
                     "/api/v1/utilisateurs/valider", 
-                    "/api/v1/utilisateurs/envoyerCode", 
                     "/swagger-ui/**",
                     "/v3/api-docs/**",
                     "/swagger-ui.html",

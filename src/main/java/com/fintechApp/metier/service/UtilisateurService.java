@@ -61,26 +61,18 @@ public class UtilisateurService {
         utilisateur.setDateMaj(LocalDateTime.now());
         utilisateur.setStatut(StatutUtilisateur.verrouille); // Statut initial "verrouillé"
 
-        
-
-        return utilisateurRepository.save(utilisateur);
-    }
-
-    @Transactional
-    public void envoyerCodeValidation(String email) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
-            .orElseThrow(() -> new UtilisateurNonTrouveException("Utilisateur non trouvé avec l'email: " + email));
-
-        if (utilisateur.getStatut() == StatutUtilisateur.actif) {
-            throw new ValidationException("Ce compte est déjà validé.");
-        }
-
+        // Le code de validation est désormais généré et envoyé directement à
+        // l'inscription (il n'existe plus de route /envoyerCode séparée) :
+        // l'utilisateur reçoit son code par email dès la création du compte.
         String code = String.valueOf((int) (Math.random() * 900000) + 100000);
         utilisateur.setCodeValidation(code);
         utilisateur.setExpirationCode(LocalDateTime.now().plusHours(24));
-        utilisateurRepository.save(utilisateur);
 
-        emailService.envoyerEmail(utilisateur.getEmail(), code);
+        Utilisateur utilisateurCree = utilisateurRepository.save(utilisateur);
+
+        emailService.envoyerEmail(utilisateurCree.getEmail(), code);
+
+        return utilisateurCree;
     }
 
     /**

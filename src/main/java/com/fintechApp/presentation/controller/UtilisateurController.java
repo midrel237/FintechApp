@@ -20,7 +20,6 @@ import com.fintechApp.metier.service.UtilisateurService;
 import com.fintechApp.persistance.entity.Utilisateur;
 import com.fintechApp.presentation.dto.utilisateurDTO.requestDTO.ConnexionUtilisateurRequestDTO;
 import com.fintechApp.presentation.dto.utilisateurDTO.requestDTO.CreateUtilisateurRequestDTO;
-import com.fintechApp.presentation.dto.utilisateurDTO.requestDTO.EnvoyerCodeRequestDTO;
 import com.fintechApp.presentation.dto.utilisateurDTO.requestDTO.UpdateUtilisateurRequestDto;
 import com.fintechApp.presentation.dto.utilisateurDTO.requestDTO.ValidUtilisateurResquestDTO;
 import com.fintechApp.presentation.dto.utilisateurDTO.responseDTO.ConnexionUtilisateurResponseDTO;
@@ -45,6 +44,8 @@ public class UtilisateurController {
     }
 
     // POST http://localhost:8080/api/utilisateurs/creer
+    // Le code de validation est généré et envoyé par email directement ici
+    // (dans creerUtilisateur) : il n'y a plus de route /envoyerCode séparée.
     @PostMapping("/creer")
     public ResponseEntity<CreateUtilisateurResponseDTO> creer(@RequestBody CreateUtilisateurRequestDTO dto) {
         Utilisateur u = utilisateurService.creerUtilisateur(dto);
@@ -52,16 +53,6 @@ public class UtilisateurController {
                 u.getId(), u.getNom(), u.getPrenom(), u.getEmail(),
                 u.getTelephone(), u.getAdresse(), u.getStatut(), u.getDateCreation());
         return ResponseEntity.status(HttpStatus.CREATED).body(reponse);
-    }
-
-    // POST http://localhost:8080/api/utilisateurs/envoyerCode
-    // Étape 1 du flux de validation : génère un nouveau code et l'envoie par
-    // email. Route publique (comme /creer) puisque l'utilisateur n'est pas
-    // encore authentifié à ce stade — seul son email est requis.
-    @PostMapping("/envoyerCode")
-    public ResponseEntity<String> envoyerCodeValidation(@RequestBody EnvoyerCodeRequestDTO dto) {
-        utilisateurService.envoyerCodeValidation(dto.getEmail());
-        return ResponseEntity.ok("Code de validation envoyé par email.");
     }
 
     // POST http://localhost:8080/api/utilisateurs/valider
