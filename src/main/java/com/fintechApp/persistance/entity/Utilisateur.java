@@ -61,6 +61,15 @@ public class Utilisateur {
     @Column(name = "date_maj",  nullable = false)
     private LocalDateTime dateMaj;
 
+    // Horodatage de la dernière déconnexion explicite. Un JWT est par
+    // nature stateless : sans ce champ, un token reste valide jusqu'à sa
+    // propre expiration même après /deconnexion. Tout token dont la date
+    // d'émission (claim "iat") est antérieure ou égale à cette valeur est
+    // désormais rejeté par JwtAuthenticationFilter (bug "token toujours
+    // valide après déconnexion" corrigé).
+    @Column(name = "token_valide_depuis")
+    private LocalDateTime tokenValideDepuis;
+
     public boolean estActif() {
         return statut == StatutUtilisateur.actif;
     }

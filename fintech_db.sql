@@ -28,6 +28,7 @@ CREATE TABLE utilisateur (
     date_creation   TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
     expiration_code   TIMESTAMP,                                 -- date d'expiration du code de validation
     date_maj        TIMESTAMP     NOT NULL DEFAULT CURRENT_TIMESTAMP,
+    token_valide_depuis TIMESTAMP,                             -- horodatage de la dernière déconnexion (révocation JWT)
 
     CONSTRAINT uq_utilisateur_email   UNIQUE (email_u),
     -- Valeurs alignées sur les noms des constantes de l'enum Java StatutUtilisateur

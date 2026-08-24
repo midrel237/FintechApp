@@ -48,6 +48,14 @@ public class JwtUtils {
         return Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token).getBody().getSubject();
     }
 
+    // Extraction de la date d'émission (claim "iat"), nécessaire pour
+    // comparer le token à Utilisateur.tokenValideDepuis dans
+    // JwtAuthenticationFilter et rejeter les tokens émis avant la dernière
+    // déconnexion (bug "token toujours valide après déconnexion").
+    public Date getIssuedAtFromJwtToken(String token) {
+        return Jwts.parserBuilder().setSigningKey(getSigningKey()).build().parseClaimsJws(token).getBody().getIssuedAt();
+    }
+
     // ÉLÉMENT CLÉ : Validation de l'intégrité et de l'expiration du token
     public boolean validateJwtToken(String authToken) {
         try {

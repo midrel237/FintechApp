@@ -163,14 +163,17 @@ public boolean validerUtilisateur(String email, String codeSaisi) {
         return utilisateurRepository.save(utilisateur);
     }
 
-    // Déconnexion : dans un schéma JWT stateless sans liste de révocation,
-    // il n'y a rien à faire côté serveur (le client se contente d'oublier
-    // son token). On garde la méthode pour l'endpoint /deconnexion, qui
-    // vérifie simplement que l'utilisateur existe.
+    // Déconnexion : un JWT est stateless, donc la seule façon de vraiment
+    // invalider ceux déjà émis (sans mettre en place une liste de révocation
+    // externe type Redis) est de mémoriser l'instant de la déconnexion et de
+    // rejeter, côté filtre d'authentification (JwtAuthenticationFilter),
+    // tout token dont la date d'émission (iat) lui est antérieure ou égale.
     @Transactional
     public void deconnecterUtilisateur(String email) {
-        utilisateurRepository.findByEmail(email)
+        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
                 .orElseThrow(() -> new UtilisateurNonTrouveException("Utilisateur non trouvé avec l'email: " + email));
+        utilisateur.setTokenValideDepuis(LocalDateTime.now());
+        utilisateurRepository.save(utilisateur);
     }
 
 

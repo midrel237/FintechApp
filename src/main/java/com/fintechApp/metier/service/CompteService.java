@@ -10,6 +10,7 @@ import com.fintechApp.metier.exception.CompteIntrouvableException;
 import com.fintechApp.metier.exception.CompteNonVideException;
 import com.fintechApp.metier.exception.CompteSuspenduException;
 import com.fintechApp.metier.exception.IncoherenceSoldeException;
+import com.fintechApp.metier.exception.RegleMetierException;
 import com.fintechApp.metier.exception.SoldeInsuffisantException;
 import com.fintechApp.metier.exception.UtilisateurIntrouvableException;
 import com.fintechApp.metier.exception.UtilisateurNonActifException;
@@ -98,14 +99,14 @@ public class CompteService {
     }
 
     /**
-     * Lit un compte par son identifiant.
+     * Lit un compte par son identifiant, réservé à son propriétaire.
      * Correspond à l'endpoint GET /v1/accounts/{idC}.
      *
      * @throws CompteIntrouvableException si idCompte ne correspond à aucun compte
+     * @throws RegleMetierException       (403, ACCES_REFUSE) si idCompte n'appartient pas à idUtilisateur
      */
-    public Compte lireCompte(Integer idCompte) {
-        return compteRepository.findById(idCompte)
-                .orElseThrow(() -> new CompteIntrouvableException(idCompte));
+    public Compte lireCompte(Integer idCompte, Integer idUtilisateur) {
+        return lireCompteVerifiePropriete(idCompte, idUtilisateur);
     }
 
     /**
@@ -127,8 +128,8 @@ public class CompteService {
      * @throws CompteIntrouvableException si idCompte ne correspond à aucun compte
      * @throws ValidationException        si nouveauType est absent
      */
-    public Compte modifierCompte(Integer idCompte, TypeCompte nouveauType) {
-        Compte compte = lireCompte(idCompte);
+    public Compte modifierCompte(Integer idCompte, TypeCompte nouveauType, Integer idUtilisateur) {
+        Compte compte = lireCompteVerifiePropriete(idCompte, idUtilisateur);
 
         if (nouveauType == null) {
             throw new ValidationException("typeCompte");
@@ -151,8 +152,8 @@ public class CompteService {
      * @throws CompteNonVideException     si le solde du compte est différent de zéro
      * @throws CompteSuspenduException    si le compte est suspendu
      */
-    public void supprimerCompte(Integer idCompte) {
-        Compte compte = lireCompte(idCompte);
+    public void supprimerCompte(Integer idCompte, Integer idUtilisateur) {
+        Compte compte = lireCompteVerifiePropriete(idCompte, idUtilisateur);
 
         if (compte.getStatut() == StatutCompte.SUSPENDU) {
             throw new CompteSuspenduException(idCompte);
@@ -176,8 +177,8 @@ public class CompteService {
      * @throws CompteSuspenduException    si le compte est suspendu (RG17)
      * @throws ValidationException        si montant est nul ou négatif ou nul
      */
-    public Compte recharger(Integer idCompte, BigDecimal montant) {
-        Compte compte = lireCompte(idCompte);
+    public Compte recharger(Integer idCompte, BigDecimal montant, Integer idUtilisateur) {
+        Compte compte = lireCompteVerifiePropriete(idCompte, idUtilisateur);
 
         if (compte.getStatut() == StatutCompte.SUSPENDU) {
             throw new CompteSuspenduException(idCompte);
@@ -205,8 +206,8 @@ public class CompteService {
      * @throws ValidationException        si montant est nul ou négatif
      * @throws SoldeInsuffisantException  si montant est supérieur au solde disponible
      */
-    public Compte retirer(Integer idCompte, BigDecimal montant) {
-        Compte compte = lireCompte(idCompte);
+    public Compte retirer(Integer idCompte, BigDecimal montant, Integer idUtilisateur) {
+        Compte compte = lireCompteVerifiePropriete(idCompte, idUtilisateur);
 
         if (compte.getStatut() == StatutCompte.SUSPENDU) {
             throw new CompteSuspenduException(idCompte);
@@ -235,8 +236,8 @@ public class CompteService {
      * @throws CompteIntrouvableException  si idCompte ne correspond à aucun compte
      * @throws IncoherenceSoldeException   si le solde stocké diverge du solde recalculé
      */
-    public BigDecimal consulterSolde(Integer idCompte) {
-        Compte compte = lireCompte(idCompte);
+    public BigDecimal consulterSolde(Integer idCompte, Integer idUtilisateur) {
+        Compte compte = lireCompteVerifiePropriete(idCompte, idUtilisateur);
 
         BigDecimal soldeRecalcule = journalComptableService.calculerSoldeDepuisJournal(idCompte);
 
@@ -261,6 +262,32 @@ public class CompteService {
     /** Génère un numéro de compte unique (RG13). Implémentation à adapter selon le format retenu. */
     private String genererNumeroCompte() {
         return "CPT-" + UUID.randomUUID().toString().substring(0, 12).toUpperCase();
+    }
+
+    /**
+     * Charge le compte et vérifie qu'il appartient bien à idUtilisateur.
+     *
+     * Correction du bug "un utilisateur peut effectuer des actions sur le
+     * compte d'un autre" : auparavant, {@code lireCompte(idCompte)} seul
+     * était utilisé partout, sans jamais comparer le propriétaire réel du
+     * compte à l'utilisateur authentifié — n'importe quel utilisateur
+     * connecté (avec SON PROPRE token, valide) pouvait donc lire, modifier,
+     * supprimer, recharger ou débiter le compte de n'importe qui d'autre en
+     * changeant simplement l'id dans l'URL (faille IDOR). Ce garde-fou est
+     * désormais appliqué avant toute opération sur un compte.
+     *
+     * @throws RegleMetierException (403, ACCES_REFUSE) si le compte n'appartient pas à idUtilisateur
+     */
+    private Compte lireCompteVerifiePropriete(Integer idCompte, Integer idUtilisateur) {
+        Compte compte = compteRepository.findById(idCompte)
+                .orElseThrow(() -> new CompteIntrouvableException(idCompte));
+
+        if (!compte.getIdUtilisateur().getId().equals(idUtilisateur)) {
+            throw new RegleMetierException("ACCES_REFUSE",
+                    "Ce compte n'appartient pas à l'utilisateur authentifié.", 403);
+        }
+
+        return compte;
     }
 
     /** RG14 : la devise doit appartenir à la liste des devises supportées par la plateforme. */

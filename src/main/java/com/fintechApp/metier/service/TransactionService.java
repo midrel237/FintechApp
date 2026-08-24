@@ -110,6 +110,17 @@ public class TransactionService {
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "COMPTE_INTROUVABLE", "Le compte source n'existe pas."));
 
+        // Correction du bug "un utilisateur peut effectuer des actions sur
+        // le compte d'un autre" : sans cette vérification, n'importe quel
+        // utilisateur authentifié (avec son PROPRE token, valide) pouvait
+        // débiter le compte de n'importe qui d'autre en indiquant son id
+        // dans l'URL — le compte source n'était jamais rapproché de
+        // l'utilisateur réellement connecté.
+        if (!compteSource.getIdUtilisateur().getId().equals(idUtilisateur)) {
+            throw new RegleMetierException("ACCES_REFUSE",
+                    "Le compte source n'appartient pas à l'utilisateur authentifié.", 403);
+        }
+
         Compte compteDestination = compteRepository.findById(requete.getCompteDestination())
                 .orElseThrow(() -> new RessourceIntrouvableException(
                         "COMPTE_INTROUVABLE", "Le compte destination n'existe pas."));

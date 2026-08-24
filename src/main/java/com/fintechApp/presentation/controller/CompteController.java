@@ -56,9 +56,13 @@ public class CompteController {
     }
 
     // GET http://localhost:8080/api/comptes/{id}/lire
+    // idUtilisateur résolu depuis le JWT de l'appelant : le service vérifie
+    // que le compte {id} lui appartient (403 ACCES_REFUSE sinon), afin
+    // qu'un utilisateur ne puisse jamais lire le compte d'un autre en
+    // changeant simplement l'id dans l'URL.
     @GetMapping("/{id}/lire")
     public ResponseEntity<CompteResponseDTO> lire(@PathVariable Integer id) {
-        Compte compte = compteService.lireCompte(id);
+        Compte compte = compteService.lireCompte(id, utilisateurConnecte().getId());
         return ResponseEntity.ok(versDTO(compte));
     }
 
@@ -78,14 +82,14 @@ public class CompteController {
     @PutMapping("/{id}")
     public ResponseEntity<CompteResponseDTO> modifier(@PathVariable Integer id,
                                                         @RequestBody UpdateCompteRequestDTO dto) {
-        Compte compte = compteService.modifierCompte(id, dto.getTypeCompte());
+        Compte compte = compteService.modifierCompte(id, dto.getTypeCompte(), utilisateurConnecte().getId());
         return ResponseEntity.ok(versDTO(compte));
     }
 
     // DELETE http://localhost:8080/api/comptes/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimer(@PathVariable Integer id) {
-        compteService.supprimerCompte(id);
+        compteService.supprimerCompte(id, utilisateurConnecte().getId());
         return ResponseEntity.noContent().build();
     }
 
@@ -93,7 +97,7 @@ public class CompteController {
     @PostMapping("/{id}/recharge")
     public ResponseEntity<CompteResponseDTO> recharger(@PathVariable Integer id,
                                                          @RequestBody RechargeCompteRequestDTO dto) {
-        Compte compte = compteService.recharger(id, dto.getMontant());
+        Compte compte = compteService.recharger(id, dto.getMontant(), utilisateurConnecte().getId());
         return ResponseEntity.ok(versDTO(compte));
     }
 
@@ -101,15 +105,16 @@ public class CompteController {
     @PostMapping("/{id}/retrait")
     public ResponseEntity<CompteResponseDTO> retirer(@PathVariable Integer id,
                                                        @RequestBody RetraitCompteRequestDTO dto) {
-        Compte compte = compteService.retirer(id, dto.getMontant());
+        Compte compte = compteService.retirer(id, dto.getMontant(), utilisateurConnecte().getId());
         return ResponseEntity.ok(versDTO(compte));
     }
 
     // GET http://localhost:8080/api/comptes/{id}/solde
     @GetMapping("/{id}/solde")
     public ResponseEntity<SoldeCompteResponseDTO> solde(@PathVariable Integer id) {
-        BigDecimal solde = compteService.consulterSolde(id);
-        Compte compte = compteService.lireCompte(id);
+        Integer idUtilisateur = utilisateurConnecte().getId();
+        BigDecimal solde = compteService.consulterSolde(id, idUtilisateur);
+        Compte compte = compteService.lireCompte(id, idUtilisateur);
         return ResponseEntity.ok(new SoldeCompteResponseDTO(id, solde, compte.getDevise()));
     }
 
