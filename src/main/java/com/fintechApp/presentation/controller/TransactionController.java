@@ -40,8 +40,8 @@ public class TransactionController {
     // POST http://localhost:8080/api/v1/transactions/{idCompteSource}/creer
     // idUtilisateur résolu depuis le JWT de l'appelant (jamais depuis le
     // corps de la requête), comme dans CompteController.
-    @PostMapping("/{idCompteSource}/creer")
-    public ResponseEntity<TransactionResponse> creer(@PathVariable Integer idCompteSource,
+    @PostMapping("/{idCompteSource}/transfert")
+    public ResponseEntity<TransactionResponse> transfert(@PathVariable Integer idCompteSource,
                                                        @RequestBody CreateTransactionRequestDTO dto) {
         Integer idUtilisateur = utilisateurConnecte().getId();
         TransactionResponse reponse = transactionService.creerTransaction(idCompteSource, idUtilisateur, dto);
