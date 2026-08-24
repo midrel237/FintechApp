@@ -6,6 +6,8 @@ import java.util.List;
 import java.util.Set;
 import java.util.UUID;
 
+import org.springframework.stereotype.Service;
+
 import com.fintechApp.metier.exception.CompteIntrouvableException;
 import com.fintechApp.metier.exception.CompteNonVideException;
 import com.fintechApp.metier.exception.CompteSuspenduException;
@@ -21,8 +23,6 @@ import com.fintechApp.persistance.entity.TypeCompte;
 import com.fintechApp.persistance.entity.Utilisateur;
 import com.fintechApp.persistance.repository.CompteRepository;
 import com.fintechApp.persistance.repository.UtilisateurRepository;
-
-import org.springframework.stereotype.Service;
 
 
 /**
@@ -128,14 +128,19 @@ public class CompteService {
      * @throws CompteIntrouvableException si idCompte ne correspond à aucun compte
      * @throws ValidationException        si nouveauType est absent
      */
-    public Compte modifierCompte(Integer idCompte, TypeCompte nouveauType, Integer idUtilisateur) {
+    public Compte modifierCompte(Integer idCompte, TypeCompte nouveauType, String nouvelleDevise, Integer idUtilisateur) {
         Compte compte = lireCompteVerifiePropriete(idCompte, idUtilisateur);
 
         if (nouveauType == null) {
             throw new ValidationException("typeCompte");
         }
 
+        if (nouvelleDevise == null) {
+            throw new ValidationException("devise");
+        }
+
         compte.setType(nouveauType);
+        compte.setDevise(nouvelleDevise);
         compte.setDateMaj(LocalDateTime.now());
 
         return compteRepository.save(compte);

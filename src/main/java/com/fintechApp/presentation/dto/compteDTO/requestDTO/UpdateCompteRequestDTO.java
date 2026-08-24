@@ -7,4 +7,5 @@ import lombok.Data;
 @Data
 public class UpdateCompteRequestDTO {
     private TypeCompte typeCompte;
+    private String devise;
 }

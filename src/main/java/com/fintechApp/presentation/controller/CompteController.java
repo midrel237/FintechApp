@@ -66,7 +66,7 @@ public class CompteController {
         return ResponseEntity.ok(versDTO(compte));
     }
 
-    // GET http://localhost:8080/api/comptes/mes-comptes
+    // GET http://localhost:8080/api/v1/comptes/mes-comptes
     // Liste les comptes de l'utilisateur authentifié (jamais d'un id passé
     // en paramètre : cela permettrait à quiconque de lister les comptes de
     // n'importe qui d'autre en devinant un identifiant).
@@ -78,22 +78,22 @@ public class CompteController {
         return ResponseEntity.ok(comptes);
     }
 
-    // PUT http://localhost:8080/api/comptes/{id}
+    // PUT http://localhost:8080/api/v1/comptes/{id}
     @PutMapping("/{id}")
     public ResponseEntity<CompteResponseDTO> modifier(@PathVariable Integer id,
                                                         @RequestBody UpdateCompteRequestDTO dto) {
-        Compte compte = compteService.modifierCompte(id, dto.getTypeCompte(), utilisateurConnecte().getId());
+        Compte compte = compteService.modifierCompte(id, dto.getTypeCompte(), dto.getDevise(), utilisateurConnecte().getId());
         return ResponseEntity.ok(versDTO(compte));
     }
 
-    // DELETE http://localhost:8080/api/comptes/{id}
+    // DELETE http://localhost:8080/api/v1/comptes/{id}
     @DeleteMapping("/{id}")
     public ResponseEntity<Void> supprimer(@PathVariable Integer id) {
         compteService.supprimerCompte(id, utilisateurConnecte().getId());
         return ResponseEntity.noContent().build();
     }
 
-    // POST http://localhost:8080/api/comptes/{id}/recharge
+    // POST http://localhost:8080/api/v1/comptes/{id}/recharge
     @PostMapping("/{id}/recharge")
     public ResponseEntity<CompteResponseDTO> recharger(@PathVariable Integer id,
                                                          @RequestBody RechargeCompteRequestDTO dto) {
@@ -101,7 +101,7 @@ public class CompteController {
         return ResponseEntity.ok(versDTO(compte));
     }
 
-    // POST http://localhost:8080/api/comptes/{id}/retrait
+    // POST http://localhost:8080/apiv1/comptes/{id}/retrait
     @PostMapping("/{id}/retrait")
     public ResponseEntity<CompteResponseDTO> retirer(@PathVariable Integer id,
                                                        @RequestBody RetraitCompteRequestDTO dto) {
@@ -109,7 +109,7 @@ public class CompteController {
         return ResponseEntity.ok(versDTO(compte));
     }
 
-    // GET http://localhost:8080/api/comptes/{id}/solde
+    // GET http://localhost:8080/api/v1/comptes/{id}/solde
     @GetMapping("/{id}/solde")
     public ResponseEntity<SoldeCompteResponseDTO> solde(@PathVariable Integer id) {
         Integer idUtilisateur = utilisateurConnecte().getId();
