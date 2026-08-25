@@ -60,7 +60,7 @@ public class JwtAuthenticationFilter extends OncePerRequestFilter {
     }
 
     private boolean tokenRevoqueParDeconnexion(String jwt, String username) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(username).orElse(null);
+        Utilisateur utilisateur = utilisateurRepository.findByEmailIgnoreCase(username).orElse(null);
         if (utilisateur == null || utilisateur.getTokenValideDepuis() == null) {
             return false; // jamais déconnecté depuis l'émission d'un token -> rien à révoquer
         }

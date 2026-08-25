@@ -89,7 +89,7 @@ public class CompteService {
         compte.setNumero(genererNumeroCompte());
         compte.setIdUtilisateur(utilisateur);
         compte.setType(typeCompte);
-        compte.setDevise(devise);
+        compte.setDevise(devise.trim().toUpperCase());
         compte.setSolde(BigDecimal.ZERO); // RG15 : champ calculé, initialisé à zéro
         compte.setStatut(StatutCompte.ACTIF);
         compte.setDateCreation(LocalDateTime.now());
@@ -134,13 +134,10 @@ public class CompteService {
         if (nouveauType == null) {
             throw new ValidationException("typeCompte");
         }
-
-        if (nouvelleDevise == null) {
-            throw new ValidationException("devise");
-        }
+        validerDevise(nouvelleDevise);
 
         compte.setType(nouveauType);
-        compte.setDevise(nouvelleDevise);
+        compte.setDevise(nouvelleDevise.trim().toUpperCase());
         compte.setDateMaj(LocalDateTime.now());
 
         return compteRepository.save(compte);

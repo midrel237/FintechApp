@@ -4,12 +4,14 @@ import java.util.List;
 
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
+import org.springframework.http.converter.HttpMessageNotReadableException;
 import org.springframework.security.authentication.BadCredentialsException;
 import org.springframework.security.authentication.DisabledException;
 import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.context.request.WebRequest;
+import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 
 import com.fintechApp.metier.exception.RegleMetierException;
 import com.fintechApp.metier.exception.RessourceIntrouvableException;
@@ -64,6 +66,25 @@ public class GlobalExceptionHandler {
     @ExceptionHandler(AuthenticationException.class)
     public ResponseEntity<ErrorResponseDTO> gererAuthentificationEchouee(AuthenticationException ex, WebRequest req) {
         return construire("AUTHENTIFICATION_ECHOUEE", "Authentification impossible.", HttpStatus.UNAUTHORIZED, req);
+    }
+
+    // Corps de requête JSON syntaxiquement invalide, ou valeur ne
+    // correspondant pas au type attendu (ex. "montant": "cent euros" pour un
+    // BigDecimal). Sans ce handler, Spring laissait ces cas tomber dans
+    // gererErreurInterne ci-dessous et répondait 500 ERREUR_INTERNE pour une
+    // simple erreur de saisie utilisateur — trompeur, et contraire au
+    // principe des codes 4xx/5xx du contrat d'API (Partie 2).
+    @ExceptionHandler(HttpMessageNotReadableException.class)
+    public ResponseEntity<ErrorResponseDTO> gererCorpsIllisible(HttpMessageNotReadableException ex, WebRequest req) {
+        return construire("VALIDATION_ERROR", "Le corps de la requête est absent, mal formé, ou contient une valeur d'un type incorrect.", HttpStatus.BAD_REQUEST, req);
+    }
+
+    // Variable de chemin ne correspondant pas au type attendu (ex.
+    // GET /comptes/abc/lire au lieu d'un identifiant numérique). Même
+    // raisonnement : 400, pas 500.
+    @ExceptionHandler(MethodArgumentTypeMismatchException.class)
+    public ResponseEntity<ErrorResponseDTO> gererParametreTypeInvalide(MethodArgumentTypeMismatchException ex, WebRequest req) {
+        return construire("VALIDATION_ERROR", "Le paramètre \"" + ex.getName() + "\" a un format invalide.", HttpStatus.BAD_REQUEST, req);
     }
 
     @ExceptionHandler(Exception.class)

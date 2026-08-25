@@ -7,5 +7,9 @@ import org.springframework.data.jpa.repository.JpaRepository;
 
 @Repository
 public interface UtilisateurRepository extends JpaRepository<Utilisateur, Integer> {
-    Optional<Utilisateur> findByEmail(String email);
+    // findByEmail (=) était sensible à la casse sur PostgreSQL : "Jean@Mail.com"
+    // et "jean@mail.com" étaient traités comme deux utilisateurs distincts,
+    // cassant à la fois l'unicité (RG A) et la connexion. IgnoreCase corrige
+    // ce comportement à la source, pour tous les appelants.
+    Optional<Utilisateur> findByEmailIgnoreCase(String email);
 }

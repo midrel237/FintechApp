@@ -2,6 +2,7 @@ package com.fintechApp.metier.service;
 
 
 import java.time.LocalDateTime;
+import java.util.regex.Pattern;
 
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
@@ -24,6 +25,14 @@ public class UtilisateurService {
     private final EmailService emailService;
     private final PasswordEncoder passwordEncoder;
 
+    // Format d'email volontairement simple (présence d'un @ et d'un domaine
+    // avec extension) : suffisant pour rejeter les saisies manifestement
+    // invalides sans devenir un filtre trop strict sur les emails réels.
+    private static final Pattern EMAIL_REGEX = Pattern.compile("^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$");
+    // ≥ 8 caractères, au moins une majuscule et au moins un chiffre (règle
+    // énoncée dans le contrat d'API, Partie 2, jusqu'ici jamais appliquée).
+    private static final Pattern MOT_PASSE_REGEX = Pattern.compile("^(?=.*[A-Z])(?=.*\\d).{8,}$");
+
     public UtilisateurService(UtilisateurRepository utilisateurRepository,
                                EmailService emailService,
                                PasswordEncoder passwordEncoder) {
@@ -34,23 +43,41 @@ public class UtilisateurService {
 
     @Transactional
     public Utilisateur creerUtilisateur(CreateUtilisateurRequestDTO dto) {
+        if (dto.getNom() == null || dto.getNom().isBlank()) {
+            throw new ValidationException("Le nom est obligatoire.");
+        }
+        if (dto.getPrenom() == null || dto.getPrenom().isBlank()) {
+            throw new ValidationException("Le prénom est obligatoire.");
+        }
         if (dto.getEmail() == null || dto.getEmail().isBlank()) {
             throw new ValidationException("L'email est obligatoire.");
+        }
+        if (!EMAIL_REGEX.matcher(dto.getEmail().trim()).matches()) {
+            throw new ValidationException("Le format de l'adresse email est invalide.");
+        }
+        if (dto.getTelephone() == null || dto.getTelephone().isBlank()) {
+            throw new ValidationException("Le téléphone est obligatoire.");
+        }
+        if (dto.getAdresse() == null || dto.getAdresse().isBlank()) {
+            throw new ValidationException("L'adresse est obligatoire.");
         }
         if (dto.getMotPasse() == null || dto.getMotPasse().isBlank()) {
             throw new ValidationException("Le mot de passe est obligatoire.");
         }
+        if (!MOT_PASSE_REGEX.matcher(dto.getMotPasse()).matches()) {
+            throw new ValidationException("Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre.");
+        }
         // RG A : "un utilisateur est identifié de manière unique par son adresse mail"
-        if (utilisateurRepository.findByEmail(dto.getEmail()).isPresent()) {
+        if (utilisateurRepository.findByEmailIgnoreCase(dto.getEmail()).isPresent()) {
             throw new ValidationException("Un utilisateur existe déjà avec cet email.");
         }
 
         Utilisateur utilisateur = new Utilisateur();
-        utilisateur.setNom(dto.getNom());
-        utilisateur.setPrenom(dto.getPrenom());
-        utilisateur.setEmail(dto.getEmail());
-        utilisateur.setTelephone(dto.getTelephone());
-        utilisateur.setAdresse(dto.getAdresse());
+        utilisateur.setNom(dto.getNom().trim());
+        utilisateur.setPrenom(dto.getPrenom().trim());
+        utilisateur.setEmail(dto.getEmail().trim());
+        utilisateur.setTelephone(dto.getTelephone().trim());
+        utilisateur.setAdresse(dto.getAdresse().trim());
 
         // RG A : "le mot de passe ne doit jamais être stocké en clair ; il doit
         // utiliser un algorithme de hachage." -> BCrypt via le PasswordEncoder
@@ -87,7 +114,7 @@ public class UtilisateurService {
      */
     @Transactional
 public boolean validerUtilisateur(String email, String codeSaisi) {
-    Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
+    Utilisateur utilisateur = utilisateurRepository.findByEmailIgnoreCase(email)
             .orElseThrow(() -> new UtilisateurNonTrouveException("Utilisateur non trouvé avec l'email: " + email));
 
     if (utilisateur.getStatut() == StatutUtilisateur.actif) {
@@ -126,7 +153,7 @@ public boolean validerUtilisateur(String email, String codeSaisi) {
      */
     @Transactional
     public Utilisateur recupererUtilisateurParEmail(String email) {
-        return utilisateurRepository.findByEmail(email)
+        return utilisateurRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UtilisateurNonTrouveException("Utilisateur non trouvé avec l'email: " + email));
     }
 
@@ -147,7 +174,18 @@ public boolean validerUtilisateur(String email, String codeSaisi) {
             utilisateur.setPrenom(dto.getPrenom());
         }
         if (dto.getEmail() != null) {
-            utilisateur.setEmail(dto.getEmail());
+            if (!EMAIL_REGEX.matcher(dto.getEmail().trim()).matches()) {
+                throw new ValidationException("Le format de l'adresse email est invalide.");
+            }
+            // Unicité (RG A) : absente jusqu'ici sur la mise à jour, alors
+            // qu'elle était déjà appliquée à l'inscription — deux
+            // utilisateurs distincts pouvaient finir avec le même email.
+            // On exclut l'utilisateur courant pour ne pas se bloquer
+            // soi-même en renvoyant simplement son propre email inchangé.
+            utilisateurRepository.findByEmailIgnoreCase(dto.getEmail())
+                    .filter(autre -> !autre.getId().equals(id))
+                    .ifPresent(autre -> { throw new ValidationException("Un utilisateur existe déjà avec cet email."); });
+            utilisateur.setEmail(dto.getEmail().trim());
         }
         if (dto.getTelephone() != null) {
             utilisateur.setTelephone(dto.getTelephone());
@@ -156,6 +194,9 @@ public boolean validerUtilisateur(String email, String codeSaisi) {
             utilisateur.setAdresse(dto.getAdresse());
         }
         if (dto.getMotPasse() != null && !dto.getMotPasse().isBlank()) {
+            if (!MOT_PASSE_REGEX.matcher(dto.getMotPasse()).matches()) {
+                throw new ValidationException("Le mot de passe doit contenir au moins 8 caractères, une majuscule et un chiffre.");
+            }
             utilisateur.setMotPasse(passwordEncoder.encode(dto.getMotPasse()));
         }
         utilisateur.setDateMaj(LocalDateTime.now());
@@ -170,7 +211,7 @@ public boolean validerUtilisateur(String email, String codeSaisi) {
     // tout token dont la date d'émission (iat) lui est antérieure ou égale.
     @Transactional
     public void deconnecterUtilisateur(String email) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
+        Utilisateur utilisateur = utilisateurRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UtilisateurNonTrouveException("Utilisateur non trouvé avec l'email: " + email));
         utilisateur.setTokenValideDepuis(LocalDateTime.now());
         utilisateurRepository.save(utilisateur);
@@ -180,7 +221,7 @@ public boolean validerUtilisateur(String email, String codeSaisi) {
 
     @Transactional
     public Utilisateur connecterUtilisateur(String email, String motPasse) {
-        Utilisateur utilisateur = utilisateurRepository.findByEmail(email)
+        Utilisateur utilisateur = utilisateurRepository.findByEmailIgnoreCase(email)
                 .orElseThrow(() -> new UtilisateurNonTrouveException(email));
         
         // Vérification de sécurité : le compte est-il toujours verrouillé ?
