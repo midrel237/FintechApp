@@ -11,7 +11,7 @@ services:
       SPRING_DATASOURCE_PASSWORD: ${DB_PASS}
     depends_on:
       db:
-       contition: service_healthy
+       condition: service_healthy
     restart: unless-stopped
 
   db:
