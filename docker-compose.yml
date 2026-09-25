@@ -6,8 +6,8 @@ services:
     ports:
       - "8080:8080"
     environment:
-      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/${DB_NAME}
-      SPRING_DATASOURCE_USERNAME: ${DB_USER}
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/fintech_db
+      SPRING_DATASOURCE_USERNAME: midrel
       SPRING_DATASOURCE_PASSWORD: ${DB_PASS}
     depends_on:
       db:
@@ -18,15 +18,15 @@ services:
     image: postgres:16-alpine
     container_name: fintech_db
     environment:
-      POSTGRES_DB: ${DB_NAME}
-      POSTGRES_USER: ${DB_USER}
+      POSTGRES_DB: fintech_db
+      POSTGRES_USER: midrel
       POSTGRES_PASSWORD: ${DB_PASS}
     ports:
       - "5432:5432"
     volumes:
       - pg_data:/var/lib/postgresql/data
     healthcheck:
-      test: ["CMD-SHELL", "pg_isready -U ${DB_USER} -d ${DB_NAME}"]
+      test: ["CMD-SHELL", "pg_isready -U midrel -d fintech_db"]
       interval: 5s
       timeout: 5s
       retries: 5
