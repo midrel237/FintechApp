@@ -9,6 +9,10 @@ services:
       SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/fintech_db
       SPRING_DATASOURCE_USERNAME: midrel
       SPRING_DATASOURCE_PASSWORD: ${DB_PASS}
+      MAIL_HOST: smtp.gmail.com
+      MAIL_PORT: 587
+      MAIL_USERNAME: ${MAIL_USERNAME}
+      MAIL_PASSWORD: ${MAIL_PASSWORD}
     depends_on:
       db:
        condition: service_healthy
