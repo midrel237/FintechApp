@@ -17,6 +17,8 @@ services:
       db:
        condition: service_healthy
     restart: unless-stopped
+    networks:
+      - fintechapp-net
 
   db:
     image: postgres:16-alpine
@@ -36,5 +38,25 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+
+  nginx:
+    image: nginx:stable
+    container_name: fintech_nginx
+    ports:
+      - "80:80"
+      - "443:443"
+    volumes:
+      - ./nginx/conf.d:/etc/nginx/conf.d
+      - ./nginx/certbot/www:/var/www/certbot
+      - ./nginx/certbot/conf:/etc/letsencrypt
+    depends_on:
+      - backend
+    networks:
+      - fintechapp-net
+
+networks:
+  fintechapp-net:
+    driver: bridge
+
 volumes:
   pg_data:    
