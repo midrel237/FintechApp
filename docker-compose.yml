@@ -53,6 +53,7 @@ services:
       - ./nginx/certbot/conf:/etc/letsencrypt
     depends_on:
       - backend
+    restart: unless-stopped
     networks:
       - fintechapp-net
 
