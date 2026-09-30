@@ -38,6 +38,8 @@ services:
       timeout: 5s
       retries: 5
     restart: unless-stopped
+    networks:
+      - fintechapp-net
 
   nginx:
     image: nginx:stable
