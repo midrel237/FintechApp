@@ -18,7 +18,7 @@ import com.fintechApp.metier.exception.RessourceIntrouvableException;
 import com.fintechApp.metier.exception.UtilisateurNonTrouveException;
 import com.fintechApp.metier.exception.ValidationException;
 
-/**
+/*
  * Traduit les exceptions métier en réponses JSON conformes au "Format
  * d'erreur unique" du contrat d'API (Partie 2), au lieu de laisser Spring
  * renvoyer une trace de pile brute en 500 par défaut.
