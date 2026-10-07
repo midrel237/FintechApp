@@ -1,0 +1,77 @@
+name: build_and_publish_image
+
+on:
+  push:
+    branches: [ "test" ]
+  pull_request:
+    
+
+jobs:
+
+  build:
+
+    runs-on: ubuntu-latest
+
+    permissions: 
+      contents: read
+      packages: write
+
+    steps:
+      - uses: actions/checkout@v7  # Action qui permet de recuperer le code du depot
+      - name: Vérifier le Dockerfile
+        uses: hadolint/hadolint-action@v3.5.0  # Action GitHub pour Hadolint, un outil de vérification de fichiers Dockerfile pour detecter des erreurs de syntaxe, etc.
+        with:
+          dockerfile: Dockerfile
+
+      # Étape indispensable : configurer le compilateur Java sur le runner
+      - name: Configurer le JDK 21
+        uses: actions/setup-java@v6.0.1  # Action qui telecharge et installe java a partir d'une distribution
+        with:
+          java-version: '21'
+          distribution: 'temurin'
+          cache: 'maven'  # Active le cache pour accélérer les futurs builds
+
+      # Compilation et exécution des tests Spring Boot
+      - name: Tester et Packager l'application
+        run: mvn clean package
+
+      # Construction de l'image
+      - uses: docker/setup-buildx-action@v4.4.1  # Cette action créera et démarrera un générateur qui pourra être utilisé dans les étapes suivantes de votre flux de travail si vous utilisez Buildx ou le build-push-action correspondante
+      - uses: docker/build-push-action@v7.4.0  # Action GitHub pour créer et envoyer des images Docker avec Buildx
+        with:
+          context: .
+          load: true
+          tags: mon-backend:ci
+          cache-from: type=gha
+          cache-to: type=gha,mode=max
+
+      # Verification de l'image produit
+      - uses: aquasecurity/trivy-action@v0.36.0  # Exécute Trivy en tant qu'action GitHub pour analyser votre image de conteneur Docker à la recherche de vulnérabilités.
+        with:
+          image-ref: mon-backend:ci
+          severity: CRITICAL,HIGH
+          exit-code: '1' # Le pipeline s'arrete s'il y a une faille grave
+
+      # Authentification au registre GHCR pour le stockage de l'image
+      - uses: docker/login-action@v4.6.0 # Action GitHub qui nous permettra de nous connecter a un registre Docker
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      # Etiqueter l'image avec des tags et des labels
+      - id: meta
+        uses: docker/metadata-action@v6.2.0  # Action GitHub pour extraire les métadonnées (tags, étiquettes) des références Git et des événements GitHub pour Docker
+        with:
+          images: ghcr.io/${{ github.repository }}
+          tags: |
+            type=raw,value=${{ github.sha }}
+            type=ref,event=branch
+            type=semver,pattern={{verion}}
+      # Publication de l'image sur la registry
+      - uses: docker/build-push-action@v7.4.0  
+        with:
+          context: .
+          push: ${{ github.event_name != 'pull_request' }}
+          labels: ${{ steps.meta.outputs.tags }}
+          cache-from: type=gha
