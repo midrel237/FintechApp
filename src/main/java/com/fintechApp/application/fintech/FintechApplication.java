@@ -14,11 +14,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
  * dans des packages FRERES : com.fintechApp.metier, .presentation,
  * .persistance, .infrastructure.
  *
- * Par défaut, @SpringBootApplication ne scanne que le package de la classe
- * qui le porte et ses sous-packages. Sans scanBasePackages explicite,
- * AUCUN des beans du projet n'est détecté et l'application ne fait
- * effectivement rien (aucun contrôleur, aucun service, aucun repository
- * disponible), sans forcément lever d'erreur bruyante au démarrage.
  *
  * On étend donc explicitement le scan à la racine com.fintechApp, ce qui
  * couvre également la découverte des entités JPA et des repositories
