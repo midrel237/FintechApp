@@ -8,11 +8,6 @@ import org.springframework.data.jpa.repository.config.EnableJpaRepositories;
 /**
  * Classe principale de démarrage de l'application.
  *
- * IMPORTANT : cette classe se trouve dans le package
- * com.fintechApp.application.fintech, alors que tous les composants Spring
- * (@Service, @RestController, @Repository, @Configuration...) se trouvent
- * dans des packages FRERES : com.fintechApp.metier, .presentation,
- * .persistance, .infrastructure.
  *
  *
  * On étend donc explicitement le scan à la racine com.fintechApp, ce qui
