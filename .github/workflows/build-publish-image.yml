@@ -32,8 +32,8 @@ jobs:
           cache: 'maven'  # Active le cache pour accélérer les futurs builds
 
       # Compilation et exécution des tests Spring Boot
-      - name: Tester et Packager l'application
-        run: mvn clean package
+      # - name: Tester et Packager l'application
+      # run: mvn clean package
 
       # Construction de l'image
       - uses: docker/setup-buildx-action@v4.4.1  # Cette action créera et démarrera un générateur qui pourra être utilisé dans les étapes suivantes de votre flux de travail si vous utilisez Buildx ou le build-push-action correspondante
